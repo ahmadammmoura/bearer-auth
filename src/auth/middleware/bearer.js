@@ -1,18 +1,24 @@
 
 'use strict';
 
-const users = require('../models/user')
+const User = require('../models/user')
 
 module.exports = async (req, res, next) => {
-
-  try {
-    if (!req.headers.authorization) { next('Invalid Login') }
-    const token = req.headers.authorization.split(' ').pop();
-    const validUser = await users.authenticateWithToken(token);
-    req.user = validUser;
-    req.token = validUser.token;
-
-  } catch (e) {
-    res.status(403).send('Invalid Login');;
+  // req.headers.authorization: 'Bearer asdads.asdsad.sdsd'
+  if (!req.headers.authorization) {
+    next('missing auth headers!');
+    return;
   }
-}
+  const headers = req.headers.authorization.split(' ');
+  if (headers[0] !== 'Bearer') {
+    next('invalid auth headers!');
+    return;
+  }
+  try {
+    const validUser = await User.authenticateWithToken(headers[1]);
+    req.user = validUser;
+    next();
+  } catch (error) {
+    res.status(403).json(error.massege)
+  }
+};
